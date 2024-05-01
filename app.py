@@ -1,27 +1,44 @@
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, jsonify
 from PIL import Image
 from rembg import remove
-import io
+import os
+import uuid
 
 app = Flask(__name__)
 
 @app.route('/process_image', methods=['POST'])
 def process_image():
-    # retrieve the Image from the Request
-    # Expecting the image in a form-data field named 'image'
-    file = request.files['image']
-    # Load the image into a PIL object
+  # Check if an image is uploaded
+  if 'image' not in request.files:
+    return jsonify({'error': 'No image uploaded'}), 400
+
+  # Get the uploaded image
+  file = request.files['image']
+
+  # Validate file extension (optional)
+  # allowed_extensions = ['jpeg', 'jpg', 'png']
+  # if file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+  #   return jsonify({'error': 'Unsupported file format'}), 400
+
+  # Generate a secure filename
+  filename = f'{uuid.uuid4()}.jpg'
+
+  try:
+    # Load the image
     img = Image.open(file)
-    # Process the Image
+    # Process the image
     processed_img = remove(img)
 
-    # Save the image to a BytesIO object and send it as a response
-    img_io = io.BytesIO()
-    processed_img.save(img_io, 'JPEG')
-    img_io.seek(0)
+    # Save the processed image
+    processed_img.save(os.path.join('uploads', filename), 'JPEG')
 
-    return send_file(img_io, mimetype='image/jpeg')
+    # Return success response with the processed image filename
+    return jsonify({'success': True, 'filename': filename}), 200
+  except Exception as e:
+    print(f'Error processing image: {e}')
+    return jsonify({'error': 'Failed to process image'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
-
+  # Create uploads folder if it doesn't exist
+  os.makedirs('uploads', exist_ok=True)
+  app.run(debug=True)
