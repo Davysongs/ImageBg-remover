@@ -42,3 +42,6 @@ if __name__ == '__main__':
   # Create uploads folder if it doesn't exist
   os.makedirs('uploads', exist_ok=True)
   app.run(debug=True)
+
+# curl -X POST -F 'file=@your_image.jpg' http://127.0.0.1:5000/upload-image -o returned_image.jpg
+ 
